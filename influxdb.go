@@ -32,12 +32,12 @@ func (i *InfluxDb) Connect(server string) error {
 		Password: os.Getenv("INFLUX_PWD"),
 	}
 
-	con, err := client.NewClient(conf)
+	i.conn, err = client.NewClient(conf)
 	if err != nil {
 		return err
 	}
 
-	dur, ver, err := con.Ping()
+	dur, ver, err := i.conn.Ping()
 	if err != nil {
 		return err
 	}
@@ -47,14 +47,16 @@ func (i *InfluxDb) Connect(server string) error {
 }
 
 func (self *InfluxDb) Log(db string, pts []client.Point) {
-	bps := client.BatchPoints{
+	bp := client.BatchPoints{
 		Points:   pts,
 		Database: db,
 	}
-	_, err := self.conn.Write(bps)
+	//b, _ := json.Marshal(&bp)
+	//fmt.Println(string(b))
+	//return
+
+	_, err := self.conn.Write(bp)
 	if err != nil {
 		log.Println(err)
 	}
-}
-func (self *InfluxDb) Commit(s interface{}) {
 }

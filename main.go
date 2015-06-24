@@ -36,10 +36,6 @@ func main() {
 			Usage: "filename to read",
 		},
 		cli.BoolFlag{
-			Name:  "includefirstline",
-			Usage: "include first line in csv file",
-		},
-		cli.BoolFlag{
 			Name:  "verbose",
 			Usage: "verbose",
 		},
@@ -58,27 +54,22 @@ func csv2influxdb(c *cli.Context) {
 	reader := csv.NewReader(csvfile)
 	reader.Comma = ';'
 
-	count, err := lineCounter(c.String("filename"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	//count, err := lineCounter(c.String("filename"))
+	//if err != nil {
+	//fmt.Println(err)
+	//return
+	//}
 
-	var pts = make([]client.Point, count)
-	i := 0
+	var pts = make([]client.Point, 0)
 	for {
 		data, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
 
-		if i == 0 && !c.Bool("includefirstline") {
-			i++
-			continue
-		}
-
 		if data[2] == "NaN" {
-			data[2] = "0"
+			log.Println("Skipping", data)
+			continue
 		}
 
 		data[2] = strings.Replace(data[2], ",", ".", -1)
@@ -93,16 +84,24 @@ func csv2influxdb(c *cli.Context) {
 			return
 		}
 
-		pts[i] = client.Point{
+		pts = append(pts, client.Point{
 			Measurement: "outsideTemp",
 			Fields: map[string]interface{}{
 				"value": temp,
 			},
 			Time: time,
-		}
+		})
 
-		i++
 	}
+
+	//for k, v := range pts {
+	//if v.Measurement == "" {
+	//log.Println(k)
+	//log.Println(v)
+	//}
+	//}
+
+	//return
 	influx := &InfluxDb{}
 	err = influx.Connect(c.String("server"))
 	if err != nil {
